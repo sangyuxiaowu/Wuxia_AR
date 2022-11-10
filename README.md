@@ -3,6 +3,8 @@
 
 需要安装有 ffmpeg 软件，Windows 电脑需要配置好环境变量。
 
+详细图文教程[《打破次元壁，让游戏角色在指尖跳舞，简易的 AR 教程》](https://sangsq.blog.csdn.net/article/details/127795804)
+
 # 食用教程
 
 1. 克隆或下载存储库 [https://github.com/sangyuxiaowu/Wuxia_AR/](https://github.com/sangyuxiaowu/Wuxia_AR/)
