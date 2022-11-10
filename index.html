@@ -1,0 +1,230 @@
+<!doctype html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="description" content="">
+    <meta name="keywords" content="">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0;">
+    <title>Wuxia AR</title>
+    <meta name="renderer" content="webkit">
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+        }
+
+        html,
+        body {
+            overflow: hidden;
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(128.87deg, #edcaca 14.05%, #f3dfa1 89.3%);
+        }
+
+        #ar {
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 99;
+        }
+        #cam{
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+        #tool{
+            z-index: 100;
+            position: absolute;
+            bottom: 2.5em;
+            display: flex;
+            width: 100%;
+        }
+        #tool a{
+            color: #fff;
+            font-weight: bolder;
+            border-radius: .6em;
+            letter-spacing: .2em;
+            display: flex;
+            justify-content: space-around;
+            width: 20%;
+            margin: 0 auto;
+            height: 2.5em;
+            line-height: 2.5em;
+            background: linear-gradient(128.87deg, #512bd4 14.05%, #d600aa 89.3%);
+            box-shadow: 2px 2px 2px 1px rgba(0, 0, 0, 0.2);
+        }
+        p{
+            background: linear-gradient(128.87deg, #512bd4 14.05%, #0b6cff 89.3%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: absolute;
+            text-align: center;
+            width: 100%;
+            bottom: 6em;
+        }
+    </style>
+</head>
+
+<body>
+    <video src="./output.webm" poster="1000000.png" width="100%" id="ar" autoplay></video>
+    <video id="cam" autoplay></video>
+    <p id="tip">轻触角色打开摄像头并拖动位置</p>
+    <div id="tool">
+        <a onclick="fullScreen()">全屏</a>
+        <a id="sizeMax">放大</a>
+        <a id="sizeMin">缩小</a>
+        <a id="arPlay">播放</a>
+    </div>
+    <script>
+        var video = document.getElementById('cam');
+        var ar = document.getElementById('ar');
+        var tool = document.getElementById('tool');
+
+        var fullScreen = function () {
+            var e = document.documentElement, a = e.requestFullScreen || e.webkitRequestFullScreen || e.mozRequestFullScreen || e.msRequestFullscreen;
+            "undefined" != typeof a && a && a.call(e)
+        };
+
+        function opneCam(){
+            if (navigator.mediaDevices.getUserMedia || navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia) {
+                getUserMedia({ video: { width:window.document.body.clientHeight, height: window.document.body.clientWidth ,facingMode: { exact: "environment" }} }, success, error);
+            } else {
+                alert('不支持访问用户媒体');
+            }
+        }
+
+        //访问用户媒体设备的兼容方法
+        function getUserMedia(constraints, success, error) {
+            if (navigator.mediaDevices.getUserMedia) {
+                //最新的标准API
+                navigator.mediaDevices.getUserMedia(constraints).then(success).catch(error);
+            } else if (navigator.webkitGetUserMedia) {
+                //webkit核心浏览器
+                navigator.webkitGetUserMedia(constraints, success, error)
+            } else if (navigator.mozGetUserMedia) {
+                //firfox浏览器
+                navigator.mozGetUserMedia(constraints, success, error);
+            } else if (navigator.getUserMedia) {
+                //旧版API
+                navigator.getUserMedia(constraints, success, error);
+            }
+        }
+        //成功回调
+        function success(stream) {
+            isCam = true;
+            document.getElementById('tip').style.display='none';
+            //兼容webkit核心浏览器
+            var CompatibleURL = window.URL || window.webkitURL;
+            //将视频流设置为video元素的源
+            // console.log(stream);
+            //video.src = CompatibleURL.createObjectURL(stream);
+            video.srcObject = stream;
+            video.play();
+        }
+
+        //失败回调
+        function error(error) {
+            console.log("访问用户媒体设备失败");
+        }
+
+        var x = 0;
+        var y = 0;
+        var l = 0;
+        var t = 0;
+        var isDown = false;
+        var isPlay = false;
+        var arSize = 100;
+        var isCam = false;
+        
+        ar.onmousedown = move_start;
+        ar.ontouchstart = move_start;
+
+        document.onmousemove = move_ing;
+        document.ontouchmove = move_ing;
+
+        document.onmouseup = move_end;
+        document.ontouchend = move_end;
+
+
+        ar.addEventListener('play', function () { 
+            isPlay = true;
+        });
+        ar.addEventListener('ended', function () {
+            isPlay = false;
+            tool.style.display = "";
+        }, false);
+
+
+        
+        function move_start(e) {
+            if(!isCam){
+                opneCam();
+            }
+            if(isPlay)return;
+
+            //获取x坐标和y坐标
+            x = e.clientX;
+            y = e.clientY;
+            if(x==undefined){
+                x = e.touches[0].pageX;
+                y = e.touches[0].pageY;
+            }
+            //获取左部和顶部的偏移量
+            l = ar.offsetLeft;
+            t = ar.offsetTop;
+            //开关打开
+            isDown = true;
+            //设置样式
+            ar.style.cursor = 'move';
+        }
+        function move_ing(e) {
+
+            if(isPlay)return;
+
+            if (isDown == false) {
+                return;
+            }
+            var nx = e.clientX;
+            var ny = e.clientY;
+            if(nx==undefined){
+                nx = e.touches[0].pageX;
+                ny = e.touches[0].pageY;
+            }
+            var nl = nx - (x - l);
+            var nt = ny - (y - t);
+            ar.style.left = nl + 'px';
+            ar.style.top = nt + 'px';
+        }
+        function move_end() {
+            //开关关闭
+            isDown = false;
+            ar.style.cursor = 'default';
+        }
+
+
+        document.getElementById("sizeMax").onclick = function(){
+            arSize += 10;
+            if(arSize>200){
+                arSize = 200;
+            }
+            ar.style.width = arSize+"%";
+        }
+        document.getElementById("sizeMin").onclick = function(){
+            arSize -= 10;
+            if(arSize<50){
+                arSize = 50;
+            }
+            ar.style.width = arSize+"%";
+        }
+        document.getElementById("arPlay").onclick = function(){
+            tool.style.display = "none";
+            ar.play();
+        }
+
+    </script>
+</body>
+
+</html>
